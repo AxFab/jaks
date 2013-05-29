@@ -1,0 +1,15 @@
+
+# Use strict ignore rules
+
+# Ignore everything
+*
+
+# Except:
+!*.js
+!*.html
+!*.sh
+
+# Repo standard files
+!README
+!LICENSE
+!.gitignore
