@@ -30,11 +30,19 @@ jaks = {};
       top:40,
       bottom:40
     };
+    var vw = {};
 
     var resize = function (width, height) 
     {
       ctx.canvas.width = width;
       ctx.canvas.height = height;
+
+      vw = {
+        stY: option.height - padding.bottom,
+        scY: 1,
+        stX: padding.left,
+        scX: 1,
+      }
     };
 
     var drawLine = function () 
@@ -47,9 +55,11 @@ jaks = {};
       for (var j = 0; j < data.length; ++j) {
         ctx.strokeStyle = colors[j % colors.length];
         ctx.beginPath ();
-        ctx.moveTo (padding.left, option.height - padding.bottom - data[j][0] * scaleY);
+        ctx.moveTo (vw.stX, vw.stY - data[j][0] * vw.scY);
         for (var i = 0; i < data[j].length; ++i) {
-          ctx.lineTo (padding.left + i * scaleX, option.height - padding.bottom - data[j][i] * scaleY);
+          var px = vw.stX + i * vw.scX;
+          var py = vw.stY - data[j][i] * vw.scY;
+          ctx.lineTo (px, py);
         }
         ctx.stroke();
       }
@@ -70,29 +80,27 @@ jaks = {};
       ctx.stroke ();
 
       for (var i = 0; i < data[0].length; i += gapX) {
-        ctx.moveTo (padding.left + i * scaleX, option.height - padding.bottom);
-        ctx.lineTo (padding.left + i * scaleX, option.height - padding.bottom + 2);
+        ctx.moveTo (padding.left + i * vw.scX, option.height - padding.bottom);
+        ctx.lineTo (padding.left + i * vw.scX, option.height - padding.bottom + 2);
         ctx.stroke ();
 
         var w = ctx.measureText (i).width;
-        ctx.fillText(i, padding.left + i * scaleX - w/2, option.height - padding.bottom + 25);
+        ctx.fillText(i, padding.left + i * vw.scX - w/2, option.height - padding.bottom + 25);
       }
 
       for (var i = 0; i < max; i += gapY) {
-        ctx.moveTo (padding.left, option.height - padding.bottom - i * scaleY);
-        ctx.lineTo (padding.left - 2, option.height - padding.bottom - i * scaleY);
+        ctx.moveTo (padding.left, option.height - padding.bottom - i * vw.scY);
+        ctx.lineTo (padding.left - 2, option.height - padding.bottom - i * vw.scY);
         ctx.stroke ();
 
         var w = ctx.measureText (i).width;
-        ctx.fillText(i, padding.left - w - 10, option.height - padding.bottom - i * scaleY + 5);
+        ctx.fillText(i, padding.left - w - 10, option.height - padding.bottom - i * vw.scY + 5);
       }
     }
 
     var max;
     var gapX = 1;
     var gapY = 3;
-    var scaleX = 40;
-    var scaleY = 15;
     var update = function () 
     {
       max = -99999999;
@@ -106,11 +114,11 @@ jaks = {};
         }
       }
 
-      scaleY = (option.height - padding.top - padding.bottom) / max / 1.2;
-      gapY =  parseInt (60 / scaleY) + 1;
+      vw.scY = (option.height - padding.top - padding.bottom) / max / 1.2;
+      gapY =  parseInt (60 / vw.scY) + 1;
 
-      scaleX = (option.width - padding.right - padding.left) / (data[0].length-1);
-      gapX =  parseInt (60 / scaleX) + 1;
+      vw.scX = (option.width - padding.right - padding.left) / (data[0].length-1);
+      gapX =  parseInt (60 / vw.scX) + 1;
     }
 
     {
