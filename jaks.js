@@ -22,13 +22,42 @@ jaks = {};
 (function() {
 
   this.extends = function(destination, source) {
-    if (!destination)
-      destination = {}
-    for (var property in source) {
-      destination[property] = source[property];
+    if (source) {
+      if (!destination)
+        destination = {}
+      for (var property in source) {
+        destination[property] = source[property];
+      }
     }
     return destination;
   };
+
+}).apply (jaks);
+
+(function () {
+
+  var HttpRequest = function (method, url, callback) {
+
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open(method, url, true);
+    xmlHttp.onreadystatechange = function() {
+      console.log ('GET', xmlHttp.readyState, xmlHttp.status)
+      if (xmlHttp.readyState == 4) {
+        if (callback)
+          callback (xmlHttp.responseText);
+      }
+    };
+    xmlHttp.send();
+  }
+
+  this.GET = function (url, callback) {
+    return HttpRequest('GET', url, callback);
+  }
+
+  this.POST = function (url, callback) {
+    return HttpRequest('POST', url, callback);
+  }
+
 }).apply (jaks);
 
 
@@ -276,3 +305,93 @@ jaks = {};
 
 }).apply (jaks);
 
+
+(function () {
+
+  this.GetCSV = function (data, callback, options) {
+
+      if (typeof (data) === 'array') {
+        for(var i=0; i<url.length; ++i) {
+          if (typeof url !== 'array') {
+            return; // Bad format
+          }
+        }
+        if (callback)
+          callback(data)
+      } else if (typeof (data) === 'string') {
+        if (data.indexOf(',') >=0) {
+          data = jaks.ParserCSV(data, options)
+            if (!data)
+              return; // Bad format
+          if (callback)
+            callback(data)
+        } else {
+          jaks.GET (data, function (content) {
+            data = jaks.ParserCSV(content, options)
+            if (!data)
+              return; // Bad format
+            if (callback)
+              callback(data)
+          })
+        }
+      } 
+      return; // Unknown format
+  }
+
+  this.ParserCSV = function (csv, options) {
+    var opt = jaks.extends({
+      separator: ',',
+      quoteSym: '"',
+      newValue:null,
+      newLine:null
+    }, options);
+
+    var doc = [];
+    var arr = [];
+    var value = '';
+    var inquote = false;
+    for (var i = 0; i < csv.length; ++i) {
+      if (csv[i] == opt.quoteSym && !inquote) {
+        inquote = true;
+      } else if (csv[i] == opt.quoteSym) {
+        if (i+1 < csv.length && csv[i+1] == opt.quoteSym) {
+          value += opt.quoteSym;
+          ++i;
+        } else {
+          inquote = false;
+        }
+      } else if (csv[i] == opt.separator && !inquote) {
+        if (opt.newValue) opt.newValue(value);
+        arr.push(value);
+        value = '';
+      } else if (csv[i] == '\n' || csv[i] == '\r') {
+        if (csv[i] == '\r' && i+1 < csv.length && csv[i+1] == '\n') {
+          ++i
+        }
+        if (!inquote) {
+          arr.push(value);
+          doc.push(arr);
+          if (opt.newValue) opt.newValue(value);
+          if (opt.newLine) opt.newLine(arr);
+          arr = [];
+          value = '';
+        } else {
+          value += csv[i];
+        }
+      } else {
+        if (value == '' && !inquote && csv[i] <= ' ')
+          continue;
+        value += csv[i];
+      }
+    }
+    
+    if (arr.length > 0 || value != '') {
+      arr.push(value);
+      doc.push(arr);
+      if (opt.newValue) opt.newValue(value);
+      if (opt.newLine) opt.newLine(arr);
+    }
+    return doc;
+  };
+
+}).apply (jaks);
