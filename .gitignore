@@ -8,8 +8,10 @@
 !*.js
 !*.html
 !*.sh
+!*.bat
 
 # Repo standard files
 !README
 !LICENSE
 !.gitignore
+!*/
