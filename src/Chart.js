@@ -33,7 +33,7 @@
       },
       grid: {
         axisColor:'black',
-        axisWidth:0.3,
+        axisWidth:0.5,
         gridColor:'black',
         gridWidth:0.3,
         fontSize:20,
@@ -45,7 +45,7 @@
         vwSize:0,
         pad:0,
         width:3,
-        colors:['red', 'blue', 'green'],
+        colors:['#a61010', '#1010a6', '#10a610', '#a610a6', '#a6a610', '#10a6a6'],
         drawGrid:true
       },
       graph:{
@@ -59,19 +59,29 @@
     var drawLine = function (ctx, rect, grid, abscissa)
     {
       ctx.lineWidth = grid.width;
+      var prev = NaN;
 
-      for (var serie = 0; serie < data.length; ++serie) {
+      for (var serie = 0; serie < grid.data.length; ++serie) {
         ctx.strokeStyle = grid.colors[serie % grid.colors.length];
         ctx.beginPath ();
         var v = grid.data[serie][0];
         var px = rect.x;
         var py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
-        ctx.moveTo (px, py);
-        for (var x = 1; x < data[serie].length; ++x) {
+        for (var x = 0; x < grid.data[serie].length; ++x) {
           v = grid.data[serie][x];
-          px = rect.x + x * abscissa.scale;
+          if (v == null)
+            continue;
+          if (isNaN(v)) {
+            ctx.stroke();
+            prev = NaN;
+          }
+          px = rect.x + abscissa.data[0][x] * abscissa.scale;
           py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
-          ctx.lineTo (px, py);
+          if (isNaN(prev))
+           ctx.moveTo (px, py);
+          else
+            ctx.lineTo (px, py);
+          prev = v;
         }
         ctx.stroke();
       }
@@ -82,11 +92,13 @@
       ctx.lineWidth = 1;
       ctx.fillStyle = 'white';
 
-      for (var serie = 0; serie < data.length; ++serie) {
+      for (var serie = 0; serie < grid.data.length; ++serie) {
         ctx.strokeStyle = grid.colors[serie % grid.colors.length];
-        for (var x = 0; x < data[serie].length; ++x) {
+        for (var x = 0; x < grid.data[serie].length; ++x) {
           var v = grid.data[serie][x];
-          var px = rect.x + x * abscissa.scale;
+          if (v == null || isNaN(v))
+            continue;
+          var px = rect.x + abscissa.data[0][x] * abscissa.scale;
           var py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
           ctx.beginPath ();
           ctx.arc (px, py, 3 ,0,2*Math.PI);
@@ -98,39 +110,43 @@
 
     var drawAxisGeneric = function(ctx, grid, coords, ox, oy) {
 
-        var pos;
-        ctx.beginPath();
+      var pos;
+      ctx.font= parseInt(grid.fontSize) + 'px ' + grid.fontFamily;
+      ctx.strokeStyle = grid.gridColor;
+      ctx.lineWidth = grid.gridWidth;
 
-        pos = coords (grid.vwMin)
-        ctx.moveTo(pos.x, pos.y);
-        pos = coords (grid.vwMax)
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke ();
+      for (var v = grid.axStart, k = 1;
+          v <= grid.vwMax;
+          v += grid.vwGap, ++k) {
 
-        for (var v = grid.axStart, k = 1;
-            v <= grid.vwMax;
-            v += grid.vwGap, ++k) {
+        var tx = v;
+        var w = ctx.measureText (tx).width;
+        pos = coords (v, w)
 
-          var tx = v;
-          var w = ctx.measureText (tx).width;
-          pos = coords (v, w)
-
-          if (grid.drawGrid == true) {
-            ctx.beginPath();
-            ctx.moveTo(ox ? ox : pos.x, oy ? oy : pos.y);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke ();
-          }
-
-          ctx.fillText(tx, pos.sx, pos.sy);
+        if (grid.drawGrid == true) {
+          ctx.beginPath();
+          ctx.moveTo(ox ? ox : pos.x, oy ? oy : pos.y);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke ();
         }
+
+        ctx.fillText(tx, pos.sx, pos.sy);
+      }
+
+      ctx.strokeStyle = grid.axisColor;
+      ctx.lineWidth = grid.axisWidth;
+
+      ctx.beginPath();
+      pos = coords (grid.vwMin)
+      ctx.moveTo(pos.x, pos.y);
+      pos = coords (grid.vwMax)
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke ();
+
+
     }
 
     var drawAxis = function (ctx, rect, grid) {
-
-      ctx.font= parseInt(grid.fontSize) + 'px ' + grid.fontFamily;
-      ctx.strokeStyle = grid.axisColor;
-      ctx.lineWidth = grid.axisWidth;
 
       if (grid.showAxis == 'south') {
 
@@ -192,6 +208,8 @@
       min = 9999999999;
       for (var j = 0; j < grid.data.length; ++j) {
         for (var i = 0; i < grid.data[j].length; ++i) {
+          if (grid.data[j][i] == null || isNaN(grid.data[j][i]))
+            continue;
           if (grid.data[j][i] > max)
             max = grid.data[j][i];
           if (grid.data[j][i] < min)
@@ -199,12 +217,14 @@
         }
       }
 
-      grid.vwMin = (grid.min ? grid.min : min);
-      grid.vwMax = (grid.max ? grid.max : max);
+      grid.vwMin = (grid.min != null ? grid.min : min);
+      grid.vwMax = (grid.max != null ? grid.max : max);
       grid.axStart = grid.vwMin; // Align 
       grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
-      grid.vwMin -= (grid.vwMax - grid.vwMin) * grid.pad;
-      grid.vwMax += (grid.vwMax - grid.vwMin) * grid.pad;
+      if (grid.min == null)
+        grid.vwMin -= (grid.vwMax - grid.vwMin) * grid.pad;
+      if (grid.max == null)
+        grid.vwMax += (grid.vwMax - grid.vwMin) * grid.pad;
       grid.vwGap = Math.round (60 / grid.scale);
     }
     
@@ -223,37 +243,41 @@
       };
     };
 
-
+    this.update = function (data) 
     {
-      cvs = document.getElementById(id);
-      prv.ctx = cvs.getContext('2d');
-      this.resize (prv.width, prv.height);
-
       prv.x = jaks.extends (prv.x, prv.grid);
-      prv.x.showAxis = 'south'
       prv.y = jaks.extends (prv.y, options.x);
-
-      prv.x.data = [[0]];
-      for (var i=0; i<data[0].length; ++i)
-        prv.x.data[0][i] = i;
-
-      updateGrid (prv.x, prv.graph.w);
-      drawAxis (prv.ctx, prv.graph, prv.x);
-
-
+      prv.x.data = [data[0]];
 
       prv.y = jaks.extends (prv.y, prv.grid);
       prv.y.showAxis = 'west'
-      prv.y = jaks.extends (prv.y, options.y);
-
-      prv.y.data = data;
       prv.y.pad = 0.1;
+      prv.y = jaks.extends (prv.y, options.y);
+      prv.y.data = [];
+      for (var i=1; i<data.length; ++i)
+        prv.y.data.push(data[i]);
 
+      updateGrid (prv.x, prv.graph.w);
       updateGrid (prv.y, prv.graph.h);
+    }
+
+    this.paint = function () 
+    {
+      drawAxis (prv.ctx, prv.graph, prv.x);
       drawAxis (prv.ctx, prv.graph, prv.y);
 
       drawLine (prv.ctx, prv.graph, prv.y, prv.x);
       drawMarkee (prv.ctx, prv.graph, prv.y, prv.x);
+    }
+
+
+    {
+      prv.$cvs = document.getElementById(id);
+      prv.ctx = prv.$cvs.getContext('2d');
+
+      this.resize (prv.width, prv.height);
+      this.update (data);
+      this.paint ();
 
       console.log (this, prv);
     }

@@ -7,10 +7,11 @@
     <script type="text/javascript">
 window.onload = function () {
 
+  var ln0 = [0, 1, 2, 3, 4, 5, 7];
   var ln1 = [9, 8, 13, 12, 8, 12, 9];
-  var ln2 = [12, 8, 12, 9, 9, 8, 13];
-  var ln3 = [4, 3, 7, 12, 12, 10, 7];
-  var data = [ ln1, ln2, ln3 ];
+  var ln2 = [12, 8, 12, NaN, 9, 8, 13];
+  var ln3 = [4, 3, null, 12, 12, 10, 7];
+  var data = [ ln0, ln1, ln2, ln3 ];
   new jaks.Chart ('graph1', data, {});
 };
     </script>
