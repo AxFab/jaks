@@ -21,9 +21,9 @@
 
   this.GetCSV = function (data, callback, options) {
 
-      if (typeof (data) === 'array') {
-        for(var i=0; i<url.length; ++i) {
-          if (typeof url !== 'array') {
+      if (Object.prototype.toString.call( data ) === '[object Array]') {
+        for(var i=0; i<data.length; ++i) {
+          if (Object.prototype.toString.call( data[i] ) !== '[object Array]') {
             return; // Bad format
           }
         }

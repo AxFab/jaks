@@ -270,16 +270,16 @@
       drawMarkee (prv.ctx, prv.graph, prv.y, prv.x);
     }
 
-
+    var that = this;
     {
       prv.$cvs = document.getElementById(id);
       prv.ctx = prv.$cvs.getContext('2d');
 
-      this.resize (prv.width, prv.height);
-      this.update (data);
-      this.paint ();
-
-      console.log (this, prv);
+      jaks.GetCSV(data, function (data) {
+        that.resize (prv.width, prv.height);
+        that.update (data);
+        that.paint ();
+      }, options.cvs);
     }
   };
 
