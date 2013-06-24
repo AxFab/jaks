@@ -13,11 +13,16 @@ window.onload = function () {
   var ln3 = [4, 3, null, 12, 12, 10, 7];
   var data = [ ln0, ln1, ln2, ln3 ];
   new jaks.Chart ('graph1', data, {});
+
+  new jaks.Chart ('graph2', data, { plot:'ClusteredArea' });
 };
     </script>
   </head>
   <body>
     <h2>Line chart</h2>
     <canvas id="graph1"></canvas>
+
+    <h2>Area chart</h2>
+    <canvas id="graph2"></canvas>
   </body>
 </html>

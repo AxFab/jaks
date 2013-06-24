@@ -21,10 +21,13 @@
 
   this.Chart = function (id, data, options) {
 
+    jaks.EventDispatcher.apply(this); // Inherit form EventDispatcher
+
     var prv = jaks.extends({
       width:600,
       height:300,
       ctx: null,
+      plot:'ClusteredLine',
       padding: {
         right:80,
         left:80,
@@ -266,8 +269,9 @@
       drawAxis (prv.ctx, prv.graph, prv.x);
       drawAxis (prv.ctx, prv.graph, prv.y);
 
-      drawLine (prv.ctx, prv.graph, prv.y, prv.x);
+      jaks.Plotter[prv.plot].draw (prv.ctx, prv.graph, prv.y, prv.x);
       drawMarkee (prv.ctx, prv.graph, prv.y, prv.x);
+      this.trigger ('paint');
     }
 
     var that = this;
