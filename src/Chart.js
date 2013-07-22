@@ -19,6 +19,15 @@
 */
 (function () {
 
+  /**
+   * Create an instance of the Chart class. A chart is a generic graphical 
+   * representation of a data table. Charts need plotters to actualy represent
+   * data.
+   * @constructor
+   * @param {string} id - Id that represent the container of the graph.
+   * @param {string|array} data - Table of data to feed the graph or csv file.
+   * @param {object} options - Options for the creation of this graph.
+   */
   this.Chart = function (id, data, options) {
 
     jaks.EventDispatcher.apply(this); // Inherit form EventDispatcher
@@ -116,6 +125,7 @@
       var pos;
       ctx.font= parseInt(grid.fontSize) + 'px ' + grid.fontFamily;
       ctx.strokeStyle = grid.gridColor;
+      ctx.fillStyle = grid.axisColor;
       ctx.lineWidth = grid.gridWidth;
 
       for (var v = grid.axStart, k = 1;
@@ -146,14 +156,73 @@
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke ();
 
+    }
 
+    var drawZone = function (ctx, grid, rect, coords, ori) {
+
+      if (grid.background == 'full') {
+        ctx.fillStyle = grid.bgColor;
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+
+      } else if (grid.background != null) {
+        ctx.fillStyle = grid.bgColor;
+        for (var v = grid.axStart, k = 1;
+            v <= grid.vwMax;
+            v += grid.vwGap, ++k) {
+          if (grid.background == 'even' && (k & 1) == 0 || 
+              grid.background == 'odd' && (k & 1) == 1) {
+
+            pos = coords (v, 0)
+
+            if (ori == 'south' || ori == 'north') {
+              if (jaks.Plotter[grid.plot].stepGap == true) {
+                ctx.fillRect(pos.x - grid.vwGap / 2, rect.y, grid.vwGap * grid.scale, rect.h);
+              } else {
+                ctx.fillRect(pos.x, rect.y, grid.vwGap * grid.scale, rect.h);
+              }
+            } else {
+              ctx.fillRect(rect.y, pos.x, rect.w, grid.vwGap * grid.scale);
+            }
+          }
+        }
+      }
+
+      if (grid.zone == null)
+        return; 
+
+      for (var i=0; i<grid.zone; i++) {
+        var zone = grid.zone[i];
+
+        if (zone.value == null) {
+          pMin = coords (zone.min, 0)
+          pMax = coords (zone.max, 0)
+          ctx.fillStyle = zone.bgColor;
+
+          if (ori == 'south' || ori == 'north') 
+            ctx.fillRect(pMin.x, rect.y, pMax.x - pMin.x, rect.h);
+          else
+            ctx.fillRect(rect.x, pMin.y, rect.w, pMax.y - pMin.y);
+        } else {
+          pVal = coords (zone.value, 0)
+          ctx.strokeStyle = zone.bgColor;
+          ctx.lineWidth = zone.width;
+
+          if (ori == 'south' || ori == 'north') {
+            ctx.moveTo(pVal.x, rect.y);
+            ctx.lineTo(pVal.x, rect.y + rect.h);
+          } else {
+            ctx.moveTo(rect.x, pVal.y);
+            ctx.lineTo(rect.x + rect.w, pVal.y);
+          }
+        }
+      }
     }
 
     var drawAxis = function (ctx, rect, grid) {
 
       if (grid.showAxis == 'south') {
 
-        drawAxisGeneric (ctx, grid, function (value, width) {
+        var coords = function (value, width) {
           var pos = { 
             x:rect.x + (value - grid.vwMin) * grid.scale,
             y:rect.h + rect.y,
@@ -162,11 +231,13 @@
           };
           pos.sx = pos.x - width / 2;
           return pos;
-        }, null, rect.y);
+        };
+
+        drawAxisGeneric (ctx, grid, coords, null, rect.y);
 
       } else if (grid.showAxis == 'north') {
 
-        drawAxisGeneric (ctx, grid, function (value, width) {
+        var coords = function (value, width) {
           var pos = { 
             x:rect.x + (value - grid.vwMin) * grid.scale,
             y:rect.y,
@@ -175,11 +246,13 @@
           };
           pos.sx = pos.x - width / 2;
           return pos;
-        }, null, rect.y + rect.h);
+        };
+
+        drawAxisGeneric (ctx, grid, coords, null, rect.y + rect.h);
 
       } else if (grid.showAxis == 'west') {
 
-        drawAxisGeneric (ctx, grid, function (value, width) {
+        var coords = function (value, width) {
           var pos = { 
             x:rect.x,
             y:rect.h + rect.y - (value - grid.vwMin) * grid.scale,
@@ -188,11 +261,13 @@
           };
           pos.sy = pos.y + 5;
           return pos;
-        }, rect.x + rect.w, null);
+        };
+
+        drawAxisGeneric (ctx, grid, coords, rect.x + rect.w, null);
 
       } else if (grid.showAxis == 'east') {
 
-        drawAxisGeneric (ctx, grid, function (value, width) {
+        var coords = function (value, width) {
           var pos = { 
             x:rect.x + rect.w,
             y:rect.h + rect.y - (value - grid.vwMin) * grid.scale,
@@ -201,8 +276,13 @@
           };
           pos.sy = pos.y + 5;
           return pos;
-        }, rect.x, null);
+        };
+
+        drawAxisGeneric (ctx, grid, coords, rect.x, null);
+
       }
+
+      drawZone (ctx, grid, rect, coords, grid.showAxis);
     }
 
     var updateGrid = function (grid, size) 
@@ -249,10 +329,12 @@
     this.update = function (data) 
     {
       prv.x = jaks.extends (prv.x, prv.grid);
-      prv.y = jaks.extends (prv.y, options.x);
+      prv.x = jaks.extends (prv.x, options.x);
+      prv.x.plot = prv.plot;
       prv.x.data = [data[0]];
 
       prv.y = jaks.extends (prv.y, prv.grid);
+      prv.y.plot = prv.plot;
       prv.y.showAxis = 'west'
       prv.y.pad = 0.1;
       prv.y = jaks.extends (prv.y, options.y);
