@@ -123,6 +123,7 @@
     var drawAxisGeneric = function(ctx, grid, coords, ox, oy) {
 
       var pos;
+      console.log(grid);
       ctx.font= parseInt(grid.fontSize) + 'px ' + grid.fontFamily;
       ctx.strokeStyle = grid.gridColor;
       ctx.fillStyle = grid.axisColor;
@@ -360,6 +361,10 @@
     {
       prv.$cvs = document.getElementById(id);
       prv.ctx = prv.$cvs.getContext('2d');
+
+      prv.grid.color = jaks.getStyle (prv.$cvs, 'color');
+      prv.grid.fontFamily = jaks.getStyle (prv.$cvs, 'font-family');
+      prv.grid.fontSize = parseInt (jaks.getStyle (prv.$cvs, 'font-size').replace('px', ''));
 
       jaks.GetCSV(data, function (data) {
         that.resize (prv.width, prv.height);
