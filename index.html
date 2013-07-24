@@ -12,9 +12,14 @@ window.onload = function () {
   var ln2 = [12, 8, 12, NaN, 9, 8, 13];
   var ln3 = [4, 3, null, 12, 12, 10, 7];
   var data = [ ln0, ln1, ln2, ln3 ];
-  new jaks.Chart ('graph1', data, {});
+  new jaks.Chart ('graph1', data, { x:{ background:'odd', bgColor:'rgba(255,35,126,0.5)' }});
 
   new jaks.Chart ('graph2', data, { plot:'ClusteredArea' });
+
+  new jaks.Chart ('graph3', data, { 
+    x:{ background:'odd', bgColor:'rgba(255,35,126,0.5)' }, 
+    plot:'ClusteredColumn' 
+  });
 };
     </script>
   </head>
@@ -24,5 +29,8 @@ window.onload = function () {
 
     <h2>Area chart</h2>
     <canvas id="graph2"></canvas>
+
+    <h2>Column chart</h2>
+    <canvas id="graph3"></canvas>
   </body>
 </html>

@@ -123,7 +123,6 @@
     var drawAxisGeneric = function(ctx, grid, coords, ox, oy) {
 
       var pos;
-      console.log(grid);
       ctx.font= parseInt(grid.fontSize) + 'px ' + grid.fontFamily;
       ctx.strokeStyle = grid.gridColor;
       ctx.fillStyle = grid.axisColor;
@@ -177,7 +176,7 @@
 
             if (ori == 'south' || ori == 'north') {
               if (jaks.Plotter[grid.plot].stepGap == true) {
-                ctx.fillRect(pos.x - grid.vwGap / 2, rect.y, grid.vwGap * grid.scale, rect.h);
+                ctx.fillRect(pos.x - grid.scale / 2, rect.y, grid.vwGap * grid.scale, rect.h);
               } else {
                 ctx.fillRect(pos.x, rect.y, grid.vwGap * grid.scale, rect.h);
               }
@@ -305,6 +304,18 @@
       grid.vwMax = (grid.max != null ? grid.max : max);
       grid.axStart = grid.vwMin; // Align 
       grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
+
+      // TODO realy bad design here !
+      if (jaks.Plotter[prv.y.plot].stepGap == true && grid == prv.x) {
+        grid.vwMax += 1;
+        grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
+        //grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
+        console.log (grid.vwMin, grid.scale)
+         grid.vwMin -= 0.5;
+         grid.vwMax -= 0.5;
+        // grid.vwMax -= grid.scale / 2;
+      }
+
       if (grid.min == null)
         grid.vwMin -= (grid.vwMax - grid.vwMin) * grid.pad;
       if (grid.max == null)
@@ -351,6 +362,10 @@
     {
       drawAxis (prv.ctx, prv.graph, prv.x);
       drawAxis (prv.ctx, prv.graph, prv.y);
+
+      prv.ctx.beginPath ()
+      prv.ctx.rect (prv.graph.x, prv.graph.y, prv.graph.w, prv.graph.h)
+      prv.ctx.clip ()
 
       jaks.Plotter[prv.plot].draw (prv.ctx, prv.graph, prv.y, prv.x);
       drawMarkee (prv.ctx, prv.graph, prv.y, prv.x);
