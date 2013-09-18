@@ -289,14 +289,34 @@
     {
       max = -9999999999;
       min = 9999999999;
-      for (var j = 0; j < grid.data.length; ++j) {
-        for (var i = 0; i < grid.data[j].length; ++i) {
-          if (grid.data[j][i] == null || isNaN(grid.data[j][i]))
-            continue;
-          if (grid.data[j][i] > max)
-            max = grid.data[j][i];
-          if (grid.data[j][i] < min)
-            min = grid.data[j][i];
+
+      if (jaks.Plotter[grid.plot].summedValue) {
+
+        for (var i = 0; i < grid.data[0].length; ++i) {
+          var sum = 0;
+          for (var j = 0; j < grid.data.length; ++j) {
+            if (grid.data[j][i] == null || isNaN(grid.data[j][i]))
+              continue;
+            sum += grid.data[j][i];
+          }
+
+          if (sum > max)
+            max = sum;
+          if (sum < min)
+            min = sum;
+        }
+
+      } else {
+
+        for (var j = 0; j < grid.data.length; ++j) {
+          for (var i = 0; i < grid.data[j].length; ++i) {
+            if (grid.data[j][i] == null || isNaN(grid.data[j][i]))
+              continue;
+            if (grid.data[j][i] > max)
+              max = grid.data[j][i];
+            if (grid.data[j][i] < min)
+              min = grid.data[j][i];
+          }
         }
       }
 
@@ -310,7 +330,7 @@
         grid.vwMax += 1;
         grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
         //grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
-        console.log (grid.vwMin, grid.scale)
+        // console.log (grid.vwMin, grid.scale)
          grid.vwMin -= 0.5;
          grid.vwMax -= 0.5;
         // grid.vwMax -= grid.scale / 2;
