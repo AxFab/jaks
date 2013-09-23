@@ -19,6 +19,13 @@
 */
 (function () {
 
+  Array.prototype.contains = function (item) {
+    for (var i=0; i<this.length; ++i)
+      if (this[i] == item)
+        return true;
+    return false;
+  };
+
   this.Spreadsheet = function (data, callback, options) {
 
     var prv = jaks.extends({
@@ -26,11 +33,13 @@
       headCols:1,
     }, options);
 
-    var htmlLine = function (arr)
+    var htmlLine = function (arr, opt)
     {
       var html = '<tr>';
       for (var i=0; i<arr.length; ++i) {
-        if (i < prv.headCols) 
+        if (opt.excludeCols != null && opt.excludeCols.contains(i))
+          continue;
+        if (i < opt.headCols) 
           html += '<th>' + arr[i] +'</th>';
         else
           html += '<td>' + arr[i] +'</td>';
@@ -38,16 +47,22 @@
       return html + '</tr>';
     }
 
-    this.html = function (css)
+    this.html = function (css, options)
     {
+      var opt = jaks.extends({}, prv);
+      var opt = jaks.extends(opt, options);
+      // TODO options can overide prv
+
       if (typeof css !== 'string')
         css = ''
       var html = '<table class="' + css + '">';
-      html += (prv.headRows > 0 ? '<thead>' : '<tbody>');
+      html += (opt.headRows > 0 ? '<thead>' : '<tbody>');
       for (var i=0; i<prv.data.length; ++i) {
-        if (i == prv.headRows && prv.headRows > 0)
+        if (opt.excludeRows != null && opt.excludeRows.contains(i))
+          continue;
+        if (i == opt.headRows && opt.headRows > 0)
           html += '</thead><tbody>';
-        html += htmlLine(prv.data[i]);
+        html += htmlLine(prv.data[i], opt);
       }
       return html + '</tbody></table>';
     }
