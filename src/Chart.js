@@ -69,36 +69,6 @@
       }
     }, options); 
 
-    var drawLine = function (ctx, rect, grid, abscissa)
-    {
-      ctx.lineWidth = grid.width;
-      var prev = NaN;
-
-      for (var serie = 0; serie < grid.data.length; ++serie) {
-        ctx.strokeStyle = grid.colors[serie % grid.colors.length];
-        ctx.beginPath ();
-        var v = grid.data[serie][0];
-        var px = rect.x;
-        var py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
-        for (var x = 0; x < grid.data[serie].length; ++x) {
-          v = grid.data[serie][x];
-          if (v == null)
-            continue;
-          if (isNaN(v)) {
-            ctx.stroke();
-            prev = NaN;
-          }
-          px = rect.x + abscissa.data[0][x] * abscissa.scale;
-          py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
-          if (isNaN(prev))
-           ctx.moveTo (px, py);
-          else
-            ctx.lineTo (px, py);
-          prev = v;
-        }
-        ctx.stroke();
-      }
-    }
 
     var drawMarkee = function (ctx, rect, grid, abscissa, group)
     {
@@ -179,10 +149,16 @@
 
             if (ori == 'south' || ori == 'north') {
               if (jaks.Plotter[grid.plot].stepGap == true) {
-                ctx.fillRect(pos.x - grid.scale / 2, rect.y, grid.vwGap * grid.scale, rect.h);
+                x = pos.x - grid.scale / 2
               } else {
-                ctx.fillRect(pos.x, rect.y, grid.vwGap * grid.scale, rect.h);
+                x = pos.x;
               }
+              if (v + grid.vwGap > grid.vwMax) 
+                w = (grid.vwMax - v) * grid.scale;
+              else 
+                w = grid.vwGap * grid.scale;
+              ctx.fillRect(x, rect.y, w, rect.h);
+              
             } else {
               ctx.fillRect(rect.y, pos.x, rect.w, grid.vwGap * grid.scale);
             }
@@ -353,18 +329,23 @@
       grid.scale = size / (grid.vwMax - grid.vwMin) / gap;
 
       // TODO realy bad design here !
-      if (jaks.Plotter[prv.y1.plot].stepGap == true && grid == prv.x) {
-        grid.vwMax += 1;
-        grid.scale = size / (grid.vwMax - grid.vwMin) / gap;
-         grid.vwMin -= 0.5;
-         grid.vwMax -= 0.5;
-      }
-
+      if (grid == prv.x) {
+        if (jaks.Plotter[prv.y1.plot].stepGap == true) {
+          grid.vwMax += 1;
+          grid.scale = size / (grid.vwMax - grid.vwMin) / gap;
+           grid.vwMin -= 0.5;
+           grid.vwMax -= 0.5;
+        }
+      } 
+      
       if (grid.min == null)
         grid.vwMin -= (grid.vwMax - grid.vwMin) * grid.pad;
       if (grid.max == null)
         grid.vwMax += (grid.vwMax - grid.vwMin) * grid.pad;
+      
+
       grid.vwGap = Math.round (40 / grid.scale);
+      if (grid.vwGap == 0) grid.vwGap = 1;
     }
     
     this.resize = function (width, height) 
@@ -467,7 +448,6 @@
       prv.ctx.beginPath ()
       prv.ctx.rect (prv.graph.x, prv.graph.y, prv.graph.w, prv.graph.h)
       prv.ctx.clip ()
-
 
       this.forEachGroup (function (grid) {
         // jaks.Plotter[prv.y1.plot].draw (prv.ctx, prv.graph, prv.y1, prv.x, prv.data, 'y1');
