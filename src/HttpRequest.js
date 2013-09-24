@@ -24,7 +24,7 @@
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.open(method, url, true);
     xmlHttp.onreadystatechange = function() {
-      console.log ('GET', xmlHttp.readyState, xmlHttp.status)
+      // console.log ('GET', xmlHttp.readyState, xmlHttp.status)
       if (xmlHttp.readyState == 4) {
         if (callback)
           callback (xmlHttp.responseText);

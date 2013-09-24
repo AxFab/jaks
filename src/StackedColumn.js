@@ -27,8 +27,7 @@
     draw: function (ctx, rect, grid, abscissa)
     {
       var summedValue = []
-      for (var idx = 0; idx < grid.data.length; ++idx) {
-
+      for (var idx = 0; idx < grid.data[0].length; ++idx) {
         jaks.Plotter['StackedColumn'].drawSerie(ctx, rect, grid, abscissa, idx, summedValue);
       }
     },
@@ -36,21 +35,24 @@
     drawSerie: function (ctx, rect, grid, abscissa, idx, summedValue)
     {
       ctx.lineWidth = grid.width;
-      var gapf = abscissa.scale * 0.1;
-      var gapn = abscissa.scale * 0.8 - grid.width; //20; // 
+
+      var gapf = abscissa.scale * 0.4
+      var gaps = abscissa.scale * 0.1;
+      var gapn = abscissa.scale * 0.8;
+
       ctx.strokeStyle = ctx.fillStyle = grid.colors[idx % grid.colors.length];
-      for (var x = 0; x < grid.data[idx].length; ++x) {
+      for (var x = 0; x < grid.data.length; ++x) {
         vn = summedValue[x];
         if (vn == null)               vn = 0;
-        vm = vn + grid.data[idx][x];
+        vm = vn + grid.data[x][idx];
         if (v == null || isNaN(v))    continue;
         summedValue [x] = vm;
 
-        px = rect.x + abscissa.data[0][x] * abscissa.scale;
+        px = rect.x + (abscissa.data[x][0] - abscissa.vwMin) * abscissa.scale;
         pny = rect.h + rect.y - (vn - grid.vwMin) * grid.scale;
         pmy = rect.h + rect.y - (vm - grid.vwMin) * grid.scale;
         ctx.beginPath();
-        ctx.rect (px + gapf, pmy, gapn, pny - pmy);
+        ctx.rect (px + gaps - gapf, pmy, gapn, pny - pmy);
         ctx.globalAlpha = 0.6;
         ctx.fill();
         ctx.globalAlpha=1.0;

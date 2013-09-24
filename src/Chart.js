@@ -57,6 +57,7 @@
         vwSize:0,
         pad:0,
         width:3,
+        mark_width:3,
         colors:['#a61010', '#1010a6', '#10a610', '#a610a6', '#a6a610', '#10a6a6'],
         drawGrid:true
       },
@@ -99,23 +100,25 @@
       }
     }
 
-    var drawMarkee = function (ctx, rect, grid, abscissa)
+    var drawMarkee = function (ctx, rect, grid, abscissa, group)
     {
-      ctx.lineWidth = 1;
-      ctx.fillStyle = 'white';
+      ctx.lineWidth = 2;
 
-      for (var serie = 0; serie < grid.data.length; ++serie) {
-        ctx.strokeStyle = grid.colors[serie % grid.colors.length];
-        for (var x = 0; x < grid.data[serie].length; ++x) {
-          var v = grid.data[serie][x];
+      for (var idx = 0; idx < grid.data[0].length; ++idx) {
+        for (var x = 0; x < grid.data.length; ++x) {
+          v = grid.data[x][idx];
           if (v == null || isNaN(v))
             continue;
-          var px = rect.x + abscissa.data[0][x] * abscissa.scale;
+          var px = rect.x + (abscissa.data[x][0] - abscissa.vwMin) * abscissa.scale;
           var py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
+          ctx.fillStyle = grid.colors[idx % grid.colors.length];
           ctx.beginPath ();
-          ctx.arc (px, py, 3 ,0,2*Math.PI);
+          ctx.arc (px, py, grid.mark_width,0,2*Math.PI);
           ctx.fill();
-          ctx.stroke();
+          ctx.fillStyle = 'white';
+          ctx.beginPath ();
+          ctx.arc (px, py, grid.mark_width*0.6,0,2*Math.PI);
+          ctx.fill();
         }
       }
     }
@@ -285,37 +288,60 @@
       drawZone (ctx, grid, rect, coords, grid.showAxis);
     }
 
-    var updateGrid = function (grid, size) 
+    var updateGrid = function (grid, name, size) 
     {
       max = -9999999999;
       min = 9999999999;
 
-      if (jaks.Plotter[grid.plot].summedValue) {
+      if (jaks.Plotter[grid.plot] == null) {
+        err = {
+          msg: "Unknown plotter " + grid.plot
+        }
+        console.error (err.msg)
+        throw err;
+      }
 
-        for (var i = 0; i < grid.data[0].length; ++i) {
+      if (jaks.Plotter[grid.plot].summedValue || grid.modif == 'percentage') {
+
+        for (var i = 0; i < grid.data.length; ++i) {
           var sum = 0;
-          for (var j = 0; j < grid.data.length; ++j) {
-            if (grid.data[j][i] == null || isNaN(grid.data[j][i]))
+          for (var j = 0; j < grid.data[0].length; ++j) {
+            value = grid.data[i][j];
+            if (value == null || isNaN(value))
               continue;
-            sum += grid.data[j][i];
+            sum += value;
           }
-
           if (sum > max)
             max = sum;
           if (sum < min)
             min = sum;
+
+          if (grid.modif == 'percentage') {
+            for (var j = 0; j < grid.data[0].length; ++j) {
+              value = grid.data[i][j];
+              console.log (value, sum )
+              value *= 100 / sum;
+              grid.data[i][j] = value;
+            }
+          }
+        }
+
+        if (grid.modif == 'percentage') {
+          max = 100;
+          min = 0;
         }
 
       } else {
 
-        for (var j = 0; j < grid.data.length; ++j) {
-          for (var i = 0; i < grid.data[j].length; ++i) {
-            if (grid.data[j][i] == null || isNaN(grid.data[j][i]))
+        for (var i = 0; i < grid.data.length; ++i) {
+          for (var j = 0; j < grid.data[0].length; ++j) {
+            value = grid.data[i][j];
+            if (value == null || isNaN(value))
               continue;
-            if (grid.data[j][i] > max)
-              max = grid.data[j][i];
-            if (grid.data[j][i] < min)
-              min = grid.data[j][i];
+            if (value > max)
+              max = value;
+            if (value < min)
+              min = value;
           }
         }
       }
@@ -323,24 +349,22 @@
       grid.vwMin = (grid.min != null ? grid.min : min);
       grid.vwMax = (grid.max != null ? grid.max : max);
       grid.axStart = grid.vwMin; // Align 
-      grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
+      var gap = (grid.min == null ? grid.pad : 0) + (grid.max == null ? grid.pad : 0) + 1
+      grid.scale = size / (grid.vwMax - grid.vwMin) / gap;
 
       // TODO realy bad design here !
-      if (jaks.Plotter[prv.y.plot].stepGap == true && grid == prv.x) {
+      if (jaks.Plotter[prv.y1.plot].stepGap == true && grid == prv.x) {
         grid.vwMax += 1;
-        grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
-        //grid.scale = size / (grid.vwMax - grid.vwMin) / (1 + 2 * grid.pad);
-        // console.log (grid.vwMin, grid.scale)
+        grid.scale = size / (grid.vwMax - grid.vwMin) / gap;
          grid.vwMin -= 0.5;
          grid.vwMax -= 0.5;
-        // grid.vwMax -= grid.scale / 2;
       }
 
       if (grid.min == null)
         grid.vwMin -= (grid.vwMax - grid.vwMin) * grid.pad;
       if (grid.max == null)
         grid.vwMax += (grid.vwMax - grid.vwMin) * grid.pad;
-      grid.vwGap = Math.round (60 / grid.scale);
+      grid.vwGap = Math.round (40 / grid.scale);
     }
     
     this.resize = function (width, height) 
@@ -358,37 +382,101 @@
       };
     };
 
+    var updateGroup = function (grid, data) {
+
+      grid.data = []
+      if (grid.idx) {
+        for (var i=1; i<data.length; ++i) {
+          grid.data[i-1] = [];
+          for (var l=0; l<grid.idx.length; ++l) {
+            j = grid.idx[l];
+            grid.data[i-1][l] = parseFloat(data[i][j]);
+          }
+        }
+      } else {
+        for (var i=1; i<data.length; ++i) {
+          grid.data[i-1] = [];
+          for (var j=1; j<data[0].length; ++j) {
+            grid.data[i-1][j-1] = parseFloat(data[i][j]);
+          }
+        }
+      }
+    }
+
+    this.forEachGroup = function (callback) 
+    {
+      var i = 1;
+      while (true) {
+        var grid = prv['y'+i]
+        if (grid == undefined)
+          break;
+        callback (grid, 'y'+i);
+        ++i;
+        if (i > 9) // TODO Fix the limit where to look
+          break;
+      }
+    }
+
     this.update = function (data) 
     {
       prv.x = jaks.extends (prv.x, prv.grid);
-      prv.x = jaks.extends (prv.x, options.x);
+      prv.x = jaks.extends (prv.x, options.grid.x);
       prv.x.plot = prv.plot;
-      prv.x.data = [data[0]];
 
-      prv.y = jaks.extends (prv.y, prv.grid);
-      prv.y.plot = prv.plot;
-      prv.y.showAxis = 'west'
-      prv.y.pad = 0.1;
-      prv.y = jaks.extends (prv.y, options.y);
-      prv.y.data = [];
-      for (var i=1; i<data.length; ++i)
-        prv.y.data.push(data[i]);
+      var i = 1;
+      while (true) {
+        if (options.grid['y'+i] == undefined)
+          break;
+        prv['y'+i] = {}
+        prv['y'+i] = jaks.extends ({}, prv.grid);
+        prv['y'+i].plot = prv.plot;
+        prv['y'+i].showAxis = 'west'
+        prv['y'+i].pad = 0.05;
+        prv['y'+i] = jaks.extends (prv['y'+i], options.grid['y'+i]);
+        ++i;
+        if (i > 9) // TODO Fix the limit where to look
+          break;
+      }
 
-      updateGrid (prv.x, prv.graph.w);
-      updateGrid (prv.y, prv.graph.h);
+      /* Data - X */
+      prv.x.data = [];
+      for (var i=1; i<data.length; ++i) {
+        prv.x.data[i-1] = [];
+        prv.x.data[i-1][0] = parseFloat(data[i][0]);
+      }
+
+      /* Data - Y */
+      this.forEachGroup (function (grid) {
+        updateGroup (grid, data)
+      })
+
+      /* Update - Y */
+      updateGrid (prv.x, 'x', prv.graph.w);
+      this.forEachGroup (function (grid, grp) {
+        updateGrid (grid, grp, prv.graph.h)
+      })
+
+      console.log ('DATA', prv.x.data, prv.y1.data)
     }
 
     this.paint = function () 
     {
       drawAxis (prv.ctx, prv.graph, prv.x);
-      drawAxis (prv.ctx, prv.graph, prv.y);
+      drawAxis (prv.ctx, prv.graph, prv.y1);
 
       prv.ctx.beginPath ()
       prv.ctx.rect (prv.graph.x, prv.graph.y, prv.graph.w, prv.graph.h)
       prv.ctx.clip ()
 
-      jaks.Plotter[prv.plot].draw (prv.ctx, prv.graph, prv.y, prv.x);
-      drawMarkee (prv.ctx, prv.graph, prv.y, prv.x);
+
+      this.forEachGroup (function (grid) {
+        // jaks.Plotter[prv.y1.plot].draw (prv.ctx, prv.graph, prv.y1, prv.x, prv.data, 'y1');
+        jaks.Plotter[grid.plot].draw (prv.ctx, prv.graph, grid, prv.x);
+        if (grid.mark != null) {
+          drawMarkee (prv.ctx, prv.graph, grid, prv.x);
+        }
+      });
+
       this.trigger ('paint');
     }
 

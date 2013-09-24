@@ -24,7 +24,7 @@
       if (!destination)
         destination = {}
       for (var property in source) {
-        if (typeof(destination[property]) == 'object')
+        if (typeof(destination[property]) == 'object' && destination[property].length == undefined)
           destination[property] = jaks.extends(destination[property], source[property]);
         else 
         destination[property] = source[property];
