@@ -24,7 +24,7 @@
 
     draw: function (ctx, rect, grid, abscissa)
     {
-      for (var idx = 0; idx < grid.data.length; ++idx) {
+      for (var idx = 0; idx < grid.data[0].length; ++idx) {
         jaks.Plotter['ClusteredArea'].drawSerie(ctx, rect, grid, abscissa, idx);
       }
     },
@@ -38,11 +38,11 @@
       ctx.strokeStyle = grid.colors[idx % grid.colors.length];
       ctx.fillStyle = grid.colors[idx % grid.colors.length];
       ctx.beginPath ();
-      var v = grid.data[idx][0];
-      var px = rect.x;
+      var v = grid.data[0][idx];
+      var px = rect.x + (abscissa.data[0][0] - abscissa.vwMin) * abscissa.scale;
       var py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
-      for (var x = 0; x < grid.data[idx].length; ++x) {
-        v = grid.data[idx][x];
+      for (var x = 0; x < grid.data.length; ++x) {
+        v = grid.data[x][idx];
         if (v == null)
           continue;
         if (isNaN(v)) {
@@ -51,7 +51,7 @@
           ctx.fill();
           prev = NaN;
         }
-        px = rect.x + abscissa.data[0][x] * abscissa.scale;
+        px = rect.x + (abscissa.data[x][0] - abscissa.vwMin) * abscissa.scale;
         py = rect.h + rect.y - (v - grid.vwMin) * grid.scale;
         if (isNaN(prev)) {
          ctx.moveTo (px, rect.h + rect.y);

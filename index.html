@@ -14,6 +14,7 @@ var jaks = {}
     <script type="text/javascript" src="src/ClusteredLine.js"></script>
     <script type="text/javascript" src="src/ClusteredColumn.js"></script>
     <script type="text/javascript" src="src/StackedColumn.js"></script>
+    <script type="text/javascript" src="src/ClusteredArea.js"></script>
 
     <link rel="stylesheet" type="text/css" href="">
 
@@ -45,7 +46,7 @@ window.onload = function () {
       p *= Math.random()+0.5;
     }
   }
-  
+
   new jaks.Chart ('graph1', data, { 
     grid: {
       x:{ 
@@ -58,7 +59,7 @@ window.onload = function () {
       }
     }
   });
-/*
+
   new jaks.Chart ('graph2', data, { 
     plot:'ClusteredArea',
     grid:{
@@ -66,7 +67,7 @@ window.onload = function () {
       y1:{}
     } 
   });
-*/
+
   new jaks.Chart ('graph3', data, { 
     grid:{
       x:{ background:'odd', bgColor:'rgba(83,255,126,0.3)' }, 
