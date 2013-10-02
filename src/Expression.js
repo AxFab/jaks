@@ -21,123 +21,17 @@
 
   this.Expression = function (expr, rules) 
   {
-    var prv = {
-      tabs:4,
-      str:expr,
-      cur:0,
-      row:0,
-      col:0,
-      peek:null,
-    };
 
-    if (rules == null)
-      rules = cRules;
+    this.parse = function (expr, rules) 
+    {
+      var lexer = new jaks.Lexer (expr, rules);
 
-    var checkIdent = function (lexer, rules) {
-      for (var i =0; i < rules.id.length; ++i) {
-        var id = rules.id[i];
-        for (var j=0; j < id.first.length; ++j) {
-          if (id.first[j].length == 1 && id.first[j] == lexer.peekChar())
-            return { type:id.name, literal:id.get (lexer, '') };
-          else if (id.first[j].length == 3 && 
-              id.first[j][0] <= lexer.peekChar() && 
-              id.first[j][2] >= lexer.peekChar() ) {
-            return { type:id.name, literal:id.get (lexer, '') };
-          } 
-        }
-      }
-    }
+      while (!lexer.endOfFile()) {
 
-    var checkOper = function (lexer, rules) {
-      var str = '';
-      pId = null;
-      for (;;) {
-        str += lexer.peekChar ();
-        m = 0;
-        id = null;
-        for (var i =0; i < rules.operators.length; ++i) {
-          if (rules.operators[i].startwith(str)) {
-            m++;
-            if (str.length == rules.operators[i].length)
-              id = i;
-          }
-        }
-
-        if (m == 0 && pId != null)
-          return { type:'operator', literal:rules.operators[pId] };
-        if (m == 0)
-          return null;
-        if (m == 1 && id != null) {
-          lexer.getChar();
-          return { type:'operator', literal:str };
-        }
-        lexer.getChar();
-        pId = id;
-      }
-    }
-
-    var checkDelimiter = function (lexer, rules) {
-
-    }
-
-    this.endOfFile = function () {
-      return (prv.cur >= prv.str.length)
-    }
-
-    this.peekChar = function () {
-      if (prv.peek == null)
-        prv.peek = this.getChar();
-      return prv.peek
-    }
-
-
-    this.getChar = function () {
-      if (prv.peek != null) {
-        var ret = prv.peek;
-        prv.peek = null;
-        return ret;
+        token = lexer.getToken();
+        this.pushToken(token);
       }
 
-      if (prv.cur >= prv.str.length)
-        return null;
-
-      c = prv.str[prv.cur++];
-      if (c == '\r') {
-        if (prv.str[prv.cur] == '\n')
-          prv.cur++;
-        c = '\n';
-      }
-      if (c == '\n') {
-        prv.row++;
-        prv.col = 0
-      } else if (c == '\t') {
-        prv.col += prv.tabs - prv.col % prv.tabs;
-      } else {
-        prv.col ++;
-      }
-
-      return c;
-    }
-
-    this.getToken = function () {
-
-      c = this.peekChar();
-
-      while (rules.blank.contains (c)) {
-        this.getChar ();
-        c = this.peekChar();
-      } 
-
-      str = checkIdent (this, rules);
-      if (str) return str;
-
-      str = checkOper (this, rules);
-      if (str) return str;
-
-      str = checkDelimiter (this, rules);
-      if (str) return str;
-
-      return null;
     }
 
     var stackToken = [];
@@ -245,15 +139,31 @@
       console.log (top);
     }
 
+    var no = 1;
+    this.translate = function (instr) {
+      // GET ALL OTHER
+
+ /*
+      switch (instr.literal) {
+        case '+':     console.log ('ADD', '$'+(no++), instr.0.value, instr.1.value);  break;
+        case '+=':    console.log ('ADD', '$'+no, instr.0.value, instr.1.value);    
+                      console.log ('MOV', instr.0.value, '$'+(no++));                 break;
+        case '-':     console.log ('SUB', '$'+(no++), instr.0.value, instr.1.value);  break;
+        case '-=':    console.log ('SUB', '$'+no, instr.0.value, instr.1.value);    
+                      console.log ('MOV', instr.0.value, '$'+(no++));                 break;
+        case '*':     console.log ('MUL', '$'+(no++), instr.0.value, instr.1.value);  break;
+        case '*=':    console.log ('MUL', '$'+no, instr.0.value, instr.1.value);    
+                      console.log ('MOV', instr.0.value, '$'+(no++));                 break;
+        case 'CALL':  console.log ('PUSH', instr.2.value);
+                      console.log ('PUSH', instr.1.value);
+                      console.log ('CALL', instr.0.value, );                          break;
+      }
+      */
+    }
+
   
     var that = this;
     {
-      while (!lexer.endOfFile()) {
-
-        token = lexer.getToken();
-        this.pushToken(token);
-      }
-
       if (expr == null)
         return;
 
@@ -267,8 +177,42 @@
 
 }).apply (jaks);
 
+/*
+var nullDataProvider = {
+  get: function (row, field) { return null },
+  set: function (row, field, value) {},
+  rows: function () { return 1; }
+}
 
-var cRules = {
+var DBProvider = {
+  get: function (row, field) { 
+    var query = "SELECT {field} FORM {table} WHERE numrow={row}";
+  },
+  set: function (row, field, value) {
+    var query = "UPDATE {table} SET {field}={value} WHERE numrow={row}";
+  },
+  rows: function () { 
+    var query = "SELECT max(numrow) FORM {table}";
+  }
+}
+
+var MongoProvider = {
+  get: function (row, field) { 
+    db.{table}.find ( { numrow:row } )[field];
+  },
+  set: function (row, field, value) {
+    var obj = db.{table}.find ( { numrow:row } )
+    obj[field] = value;
+    obj.save ();
+  },
+  rows: function () { 
+    db.{table}.count ();
+  }
+}
+
+*/
+
+jaks.jaksLangRules = {
     id:[
       {
         first:['a-z', 'A-Z', '_', '$' ],
@@ -404,4 +348,5 @@ var cRules = {
     ],
     blank:[' ', '\t', '\r', '\n'],
   };
+
 
