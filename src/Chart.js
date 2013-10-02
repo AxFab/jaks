@@ -261,13 +261,14 @@
 
       }
 
-      drawZone (ctx, grid, rect, coords, grid.showAxis);
+      if (coords != null)
+        drawZone (ctx, grid, rect, coords, grid.showAxis);
     }
 
     var updateGrid = function (grid, name, size) 
     {
-      max = -9999999999;
-      min = 9999999999;
+      max = -99999999999999;
+      min = 99999999999999;
 
       if (jaks.Plotter[grid.plot] == null) {
         err = {
@@ -295,7 +296,6 @@
           if (grid.modif == 'percentage') {
             for (var j = 0; j < grid.data[0].length; ++j) {
               value = grid.data[i][j];
-              console.log (value, sum )
               value *= 100 / sum;
               grid.data[i][j] = value;
             }
@@ -364,9 +364,13 @@
     };
 
     var updateGroup = function (grid, data) {
-
+      grid.head = []
       grid.data = []
       if (grid.idx) {
+        for (var l=0; l<grid.idx.length; ++l) {
+          grid.head[l] = getHeader (data, grid.idx[l]);
+        }
+
         for (var i=1; i<data.length; ++i) {
           grid.data[i-1] = [];
           for (var l=0; l<grid.idx.length; ++l) {
@@ -374,7 +378,12 @@
             grid.data[i-1][l] = parseFloat(data[i][j]);
           }
         }
+
       } else {
+        for (var j=1; j<data[0].length; ++j) {
+          grid.head[j-1] = getHeader (data, j);
+        }
+
         for (var i=1; i<data.length; ++i) {
           grid.data[i-1] = [];
           for (var j=1; j<data[0].length; ++j) {
@@ -396,6 +405,26 @@
         if (i > 9) // TODO Fix the limit where to look
           break;
       }
+    }
+
+    var getHeader = function (data, idx)
+    {
+      var head = {
+        name: data[0][idx]
+      }
+
+      var value = data[1][idx];
+
+      if (!isNaN(new Date(value).getTime ())) {
+        head.type = 'date'
+        head.parse = function (v) { return new Date(v).getTime(); }
+
+      } else if (!isNaN(parseFloat(value))) {
+        head.type = 'float'
+        head.parse = parseFloat
+      } 
+
+      return head;
     }
 
     this.update = function (data) 
@@ -420,10 +449,12 @@
       }
 
       /* Data - X */
+      prv.x.head = getHeader (data, 0);
+
       prv.x.data = [];
       for (var i=1; i<data.length; ++i) {
-        prv.x.data[i-1] = [];
-        prv.x.data[i-1][0] = parseFloat(data[i][0]);
+        prv.x.data[i-1] = []
+        prv.x.data[i-1][0] = prv.x.head.parse(data[i][0]);
       }
 
       /* Data - Y */
@@ -437,7 +468,7 @@
         updateGrid (grid, grp, prv.graph.h)
       })
 
-      console.log ('DATA', prv.x.data, prv.y1.data)
+      console.log ('DATA', prv.x.data, prv.x.head, prv.y1.data, prv.y1.head, prv.x.vwMin, prv.x.vwMax)
     }
 
     this.paint = function () 
