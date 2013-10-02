@@ -19,19 +19,22 @@
 */
 (function () {
 
-  Array.prototype.contains = function (item) {
-    for (var i=0; i<this.length; ++i)
-      if (this[i] == item)
-        return true;
-    return false;
-  };
-
   this.Spreadsheet = function (data, callback, options) {
 
     var prv = jaks.extends({
       headRows:1,
       headCols:1,
+      data:[[]],
+      label:[]
     }, options);
+
+    var lableIdx = function (field) {
+      for (var i=0; i<prv.label.length; ++i) {
+        if (prv.label[i] == field)
+          return i;
+      }
+      return null;
+    }
 
     var htmlLine = function (arr, opt)
     {
@@ -66,6 +69,39 @@
       }
       return html + '</tbody></table>';
     }
+
+    this.compute = function (row, field) {
+      if (typeof (field) == 'string') {
+        var ex = jaks.Expression (field);
+        return ex.compute ({ row:row, dataprovider:this });
+      } else {
+        return prv.data[row][field];
+      }
+    }
+
+    this.get = function (row, field) { 
+      if (typeof (field) == 'string') {
+        field = lableIdx(field);
+        if (field == null)
+          return null;
+      }
+      if (prv.data[row] == null)
+        return null;
+      return this.compute (row, field);
+    }
+
+    this.set = function (row, field, value) { 
+      if (typeof (field) == 'string') {
+        field = lableIdx(field);
+        if (field == null)
+          return;
+      }
+      if (prv.data[row] == null)
+        prv.data[row] = [];
+      prv.data[row][field] = value;
+    }
+
+    this.rows = function () { return prv.data.length; }
 
     var that = this;
     {
