@@ -24,13 +24,25 @@
     var prv = jaks.extends({
       headRows:1,
       headCols:1,
+      data:[[]],
+      label:[]
     }, options);
 
-    var htmlLine = function (arr)
+    var lableIdx = function (field) {
+      for (var i=0; i<prv.label.length; ++i) {
+        if (prv.label[i] == field)
+          return i;
+      }
+      return null;
+    }
+
+    var htmlLine = function (arr, opt)
     {
       var html = '<tr>';
       for (var i=0; i<arr.length; ++i) {
-        if (i < prv.headCols) 
+        if (opt.excludeCols != null && opt.excludeCols.contains(i))
+          continue;
+        if (i < opt.headCols) 
           html += '<th>' + arr[i] +'</th>';
         else
           html += '<td>' + arr[i] +'</td>';
@@ -38,19 +50,58 @@
       return html + '</tr>';
     }
 
-    this.html = function (css)
+    this.html = function (css, options)
     {
+      var opt = jaks.extends({}, prv);
+      var opt = jaks.extends(opt, options);
+      // TODO options can overide prv
+
       if (typeof css !== 'string')
         css = ''
       var html = '<table class="' + css + '">';
-      html += (prv.headRows > 0 ? '<thead>' : '<tbody>');
+      html += (opt.headRows > 0 ? '<thead>' : '<tbody>');
       for (var i=0; i<prv.data.length; ++i) {
-        if (i == prv.headRows && prv.headRows > 0)
+        if (opt.excludeRows != null && opt.excludeRows.contains(i))
+          continue;
+        if (i == opt.headRows && opt.headRows > 0)
           html += '</thead><tbody>';
-        html += htmlLine(prv.data[i]);
+        html += htmlLine(prv.data[i], opt);
       }
       return html + '</tbody></table>';
     }
+
+    this.compute = function (row, field) {
+      if (typeof (field) == 'string') {
+        var ex = jaks.Expression (field);
+        return ex.compute ({ row:row, dataprovider:this });
+      } else {
+        return prv.data[row][field];
+      }
+    }
+
+    this.get = function (row, field) { 
+      if (typeof (field) == 'string') {
+        field = lableIdx(field);
+        if (field == null)
+          return null;
+      }
+      if (prv.data[row] == null)
+        return null;
+      return this.compute (row, field);
+    }
+
+    this.set = function (row, field, value) { 
+      if (typeof (field) == 'string') {
+        field = lableIdx(field);
+        if (field == null)
+          return;
+      }
+      if (prv.data[row] == null)
+        prv.data[row] = [];
+      prv.data[row][field] = value;
+    }
+
+    this.rows = function () { return prv.data.length; }
 
     var that = this;
     {

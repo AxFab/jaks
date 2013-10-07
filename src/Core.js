@@ -33,4 +33,36 @@
     return destination;
   };
 
+  this.shakerSort = function(list, comp_func, desc) {
+    var b = 0;
+    var t = list.length - 1;
+    var swap = true;
+
+    while(swap) {
+      swap = false;
+      for(var i = b; i < t; ++i) {
+        var c = comp_func(list[i], list[i+1]);
+        if (!desc) c = -c;
+        if ( c > 0 ) {
+          var q = list[i]; list[i] = list[i+1]; list[i+1] = q;
+          swap = true;
+        }
+      } 
+      t--;
+
+      if (!swap) break;
+
+      for(var i = t; i > b; --i) {
+        var c = comp_func(list[i], list[i-1]);
+        if (!desc) c = -c;
+        if ( c < 0 ) {
+          var q = list[i]; list[i] = list[i-1]; list[i-1] = q;
+          swap = true;
+        }
+      } 
+      b++;
+
+    }
+  }
+
 }).apply (jaks);
