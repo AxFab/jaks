@@ -160,7 +160,11 @@
               ctx.fillRect(x, rect.y, w, rect.h);
               
             } else {
-              ctx.fillRect(rect.y, pos.x, rect.w, grid.vwGap * grid.scale);
+              if (v + grid.vwGap > grid.vwMax) 
+                h = (grid.vwMax - v) * grid.scale;
+              else 
+                h = grid.vwGap * grid.scale;
+              ctx.fillRect(rect.x, pos.y, rect.w, -h);
             }
           }
         }

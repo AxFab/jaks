@@ -4,6 +4,9 @@
     <script type="text/javascript">
 var jaks = {}
     </script>
+    <script type="text/javascript" src="src/Array.js"></script>
+    <script type="text/javascript" src="src/String.js"></script>
+    <script type="text/javascript" src="src/Date.js"></script>
     <script type="text/javascript" src="src/Core.js"></script>
     <script type="text/javascript" src="src/HttpRequest.js"></script>
     <script type="text/javascript" src="src/ParserCSV.js"></script>
@@ -84,17 +87,28 @@ window.onload = function () {
     }
   });
 
+  new jaks.Chart ('graph4', data, { 
+    plot:'StackedColumn',
+    grid:{
+      x:{},
+      y1:{
+        min:0,
+        background:'odd', 
+        bgColor:'rgba(50,80,80,0.1)' 
+      }
+    } 
+  });
+
 };
     </script>
   </head>
   <body>
-    <h2>Line chart</h2>
+    <h2>Line & Area chart</h2>
     <canvas id="graph1"></canvas>
-
-    <h2>Area chart</h2>
     <canvas id="graph2"></canvas>
 
     <h2>Column chart</h2>
     <canvas id="graph3"></canvas>
+    <canvas id="graph4"></canvas>
   </body>
 </html>
