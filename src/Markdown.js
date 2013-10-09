@@ -45,6 +45,7 @@
   				str += c;
   		}
 
+      parseLine (str);
       commit();
   	}
 
@@ -280,3 +281,4 @@
   };
 
 }).apply (jaks);
+
