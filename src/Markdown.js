@@ -93,11 +93,6 @@
       lastBlock.text += line + '\n';
     }
 
-    var fillSpec = function (id, lnk) 
-    {
-      lnk.url = 'wiki-id:' + id;
-    }
-
     var formatSpec = function (block, idx) 
     {
       var pidx = idx;
@@ -109,7 +104,7 @@
         url: '',
         title: '',
       }
-      lnk.url = 'wiki:' + lnk.inside;
+      lnk.url = lnk.inside;
       idx += lnk.inside.length + 1;
 
       if (block[idx] == '[') {
@@ -117,7 +112,7 @@
         if (k >= 0) {
           idx++;
           id = block.substring (idx, k);
-          fillSpec(id, lnk);
+          lnk.url = id;
           idx += id.length + 1;
         }
       } else if (block[idx] == '(') {
@@ -225,10 +220,21 @@
             case '[':  
               lnk = formatSpec(block, idx);
               idx += lnk.lg
+
+              var cl = 'wiki-link';
+              if (lnk.url.startwith('http:/') || lnk.url.startwith('https:/'))
+                cl += ' wiki-extern'
+              else {
+                cl += ' wiki-intern'
+                 if (!lnk.url.startwith('#')) {
+                    lnk.url = '#' + lnk.url;
+                 }
+              }
+
               if (lnk.title != '')
-                str += '<a href="' + lnk.url + '" title="' + lnk.title + '">' + lnk.inside + '</a>';
+                str += '<a class="' + cl + '" href="' + lnk.url + '" title="' + lnk.title + '">' + lnk.inside + '</a>';
               else 
-                str += '<a href="' + lnk.url + '">' + lnk.inside + '</a>';
+                str += '<a class="' + cl + '" href="' + lnk.url + '">' + lnk.inside + '</a>';
               break;
 
             case '!':

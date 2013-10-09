@@ -42,13 +42,25 @@
       return url;
     }
 
+    this.reset = function (url) 
     {
-      var url = getUrlOfWiki();
+      if (url == null)
+        url = getUrlOfWiki();
+
       jaks.GET (url, function (data) {
 
         var pager = document.getElementById(container);
         pager.innerHTML = jaks.Markdown (data);
+        
+        /* jaks.select (container + ' .wiki-intern').onclick (function () {
+          that.reset();
+        }); */
       });
+    }
+
+    var that = this;
+    {
+      this.reset ();
     }
   }
 
