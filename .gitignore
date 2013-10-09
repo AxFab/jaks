@@ -15,3 +15,8 @@
 !LICENSE
 !.gitignore
 !*/
+
+# Ignore generated file
+jaks.js
+jaks.*.js
+jaks-*.js

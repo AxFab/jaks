@@ -14,7 +14,8 @@ set outm=%name%-%maj%.%min%.%ptc%.min.js
 set outs=%name%.js
 
 :: concatenate files
-echo jaks = {};  > %out%
+echo if (exports == null) exports = {};  > %out%
+echo jaks = exports;  >> %out%
 
 for /f %%e in ('dir /b src\') do (
 	echo src\%%e
