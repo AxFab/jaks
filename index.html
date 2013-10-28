@@ -1,6 +1,15 @@
 <html>
   <head>
     <meta charset="UTF-8" /> 
+    <style>
+body, p, div {
+  font-family: Arial;
+  font-size: 14px;
+}
+canvas {
+  border:1px dashed rgb(80,80,80);
+}
+    </style>
     <script type="text/javascript">
 var jaks = {}
     </script>
@@ -50,7 +59,7 @@ window.onload = function () {
     }
   }
 
-  new jaks.Chart ('graph1', data, { 
+  new jaks.Chart ('graph11', data, { 
     grid: {
       x:{ 
         background:'odd', 
@@ -63,8 +72,19 @@ window.onload = function () {
     }
   });
 
-  new jaks.Chart ('graph2', data, { 
+  new jaks.Chart ('graph12', data, { 
     plot:'ClusteredArea',
+    grid:{
+      x:{},
+      y1:{}
+    } 
+  });
+
+  new jaks.Chart ('graph13', data, { 
+    plot:'ClusteredArea',
+    legendLayout:'north',
+    titleLayout:'north',
+    title:'MyChart',
     grid:{
       x:{},
       y1:{}
@@ -77,7 +97,8 @@ window.onload = function () {
       y1:{
         plot:'ClusteredColumn' ,
         width:1,
-        idx:[1,2]
+        idx:[1,2],
+        min:0
       }, 
       y2:{
         mark:'white-circle',
@@ -104,8 +125,9 @@ window.onload = function () {
   </head>
   <body>
     <h2>Line & Area chart</h2>
-    <canvas id="graph1"></canvas>
-    <canvas id="graph2"></canvas>
+    <canvas id="graph11"></canvas>
+    <canvas id="graph12"></canvas>
+    <canvas id="graph13"></canvas>
 
     <h2>Column chart</h2>
     <canvas id="graph3"></canvas>

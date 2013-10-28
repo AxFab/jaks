@@ -37,11 +37,13 @@
       height:300,
       ctx: null,
       plot:'ClusteredLine',
+      titleLayout:'',
+      legendLayout:'east',
       padding: {
-        right:80,
-        left:80,
-        top:40,
-        bottom:40
+        right:10,
+        left:10,
+        top:10,
+        bottom:10
       },
       grid: {
         axisColor:'black',
@@ -59,7 +61,8 @@
         width:3,
         mark_width:3,
         colors:['#a61010', '#1010a6', '#10a610', '#a610a6', '#a6a610', '#10a6a6'],
-        drawGrid:true
+        gridSize:40,
+        drawGrid:true,
       },
       graph:{
         x:0,
@@ -93,8 +96,8 @@
       }
     }
 
-    var drawAxisGeneric = function(ctx, grid, coords, ox, oy) {
-
+    var drawAxisGeneric = function(ctx, grid, coords, ox, oy)
+    {
       var pos;
       ctx.font= parseInt(grid.fontSize) + 'px ' + grid.fontFamily;
       ctx.strokeStyle = grid.gridColor;
@@ -105,7 +108,7 @@
           v <= grid.vwMax;
           v += grid.vwGap, ++k) {
 
-        var tx = v;
+        var tx = v.toFixed(grid.log);
         var w = ctx.measureText (tx).width;
         pos = coords (v, w)
 
@@ -128,11 +131,10 @@
       pos = coords (grid.vwMax)
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke ();
-
     }
 
-    var drawZone = function (ctx, grid, rect, coords, ori) {
-
+    var drawZone = function (ctx, grid, rect, coords, ori) 
+    {
       if (grid.background == 'full') {
         ctx.fillStyle = grid.bgColor;
         ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
@@ -201,8 +203,8 @@
       }
     }
 
-    var drawAxis = function (ctx, rect, grid) {
-
+    var drawAxis = function (ctx, rect, grid)
+    {
       if (grid.showAxis == 'south') {
 
         var coords = function (value, width) {
@@ -328,7 +330,6 @@
 
       grid.vwMin = (grid.min != null ? grid.min : min);
       grid.vwMax = (grid.max != null ? grid.max : max);
-      grid.axStart = grid.vwMin; // Align 
       var gap = (grid.min == null ? grid.pad : 0) + (grid.max == null ? grid.pad : 0) + 1
       grid.scale = size / (grid.vwMax - grid.vwMin) / gap;
 
@@ -348,8 +349,26 @@
         grid.vwMax += (grid.vwMax - grid.vwMin) * grid.pad;
       
 
-      grid.vwGap = Math.round (40 / grid.scale);
+      grid.log = Math.log (grid.vwMin) / Math.log (10)
+      // console.log (log, isNaN(log))
+      if (isFinite(grid.log)) {
+        grid.axStart = parseFloat (grid.vwMin.toFixed(grid.log))
+
+      } else {
+        grid.log = 0
+        grid.axStart = parseFloat (grid.vwMin.toFixed(grid.log))
+        // grid.axStart = grid.vwMin
+      }
+      /*
+      console.log (grid.vwMin/grid.vwMax, Math.log(grid.vwMin/grid.vwMax)/Math.log(10))
+      grid.log = (Math.log(grid.vwMin/grid.vwMax)/Math.log(10) + 1)
+      grid.
+
+*/
+      grid.vwGap = Math.round (grid.gridSize / grid.scale);
       if (grid.vwGap == 0) grid.vwGap = 1;
+      // grid.axStart = grid.vwMin; // Align 
+
     }
     
     this.resize = function (width, height) 
@@ -358,16 +377,134 @@
       prv.height = height;
       prv.ctx.canvas.width = width;
       prv.ctx.canvas.height = height;
+    }
+
+    this.refreshlayout = function ()
+    {
+      width = prv.ctx.canvas.width;
+      height = prv.ctx.canvas.height;
 
       prv.graph = {
-        x: prv.padding.left,
-        y: prv.padding.top,
-        w: prv.width - prv.padding.left - prv.padding.right,
-        h: prv.height - prv.padding.top - prv.padding.bottom,
+        x: 0,
+        y: 0,
+        w: width - 0,
+        h: height - 0,
       };
+
+      // AXIS X
+      if (prv.x.showAxis != 'none') 
+        prv.graph.h -= 30;
+
+      // AXIS Y
+      if (prv.severalAxis) {
+        this.forEachGroup (function (grid) {
+          if (grid.showAxis != 'none') {
+            prv.graph.x += 60;
+            prv.graph.w -= 60;
+          }
+        })
+      } else if (prv.y1.showAxis != 'none') {
+        prv.graph.x += 60;
+        prv.graph.w -= 60;
+      }
+
+      switch (prv.titleLayout) {
+        case 'north': 
+          prv.graph.y += prv.grid.fontSize * 2.8;
+          prv.graph.h -= prv.grid.fontSize * 2.8;
+          prv.titleInfo = {
+            x:prv.graph.x,
+            w:prv.graph.w,
+            y:prv.grid.fontSize * 1.8
+          }
+          break;
+
+        case 'south':
+          prv.graph.h -= prv.grid.fontSize * 2.8;
+          prv.titleInfo = {
+            x:prv.graph.x,
+            w:prv.graph.w,
+            y:height - prv.grid.fontSize * 1.8
+          }
+          break;
+      }
+
+      var series = 0
+      this.forEachGroup (function (grid) {
+        series += grid.head.length;
+      })
+
+      switch (prv.legendLayout) {
+        case 'north': 
+          prv.legend = {
+            x:prv.graph.x,
+            w:prv.graph.w,
+            y:prv.graph.y,
+            h:40 /* Compute */
+          }
+          prv.graph.y += prv.legend.h
+          prv.graph.h -= prv.legend.h
+          prv.legend.o = true;
+          break;
+
+        case 'south':
+          prv.legend = {
+            x:prv.graph.x,
+            w:prv.graph.w,
+            y:prv.graph.h-40,
+            h:40 /* Compute */
+          }
+          prv.graph.h -= prv.legend.h
+          prv.legend.o = true;
+          break;
+
+        case 'west':
+          prv.legend = {
+            x:prv.graph.x,
+            w:100,
+            y:10,
+            h:height-20
+          }
+          prv.graph.x += prv.legend.w + 20
+          prv.graph.w -= prv.legend.w + 20
+          prv.legend.o = false;
+          break;
+
+        case 'east':
+          lg = parseInt ((height - 20) / 25)
+          lg = Math.ceil(series/lg);
+          prv.legend = {
+            x:prv.graph.x + prv.graph.w - 110 * lg,
+            w:110 * lg,
+            y:10,
+            h:height-20
+          }
+          prv.graph.w -= prv.legend.w + 10
+          prv.legend.o = false;
+          break;
+      }
+
+      if (prv.graph.x < prv.padding.left) {
+        prv.graph.w -= prv.padding.left - prv.graph.x
+        prv.graph.x += prv.padding.left - prv.graph.x
+      }
+      if (prv.graph.y < prv.padding.top) {
+        prv.graph.h -= prv.padding.top - prv.graph.y
+        prv.graph.y += prv.padding.top - prv.graph.y
+      }
+      if (width - prv.graph.x - prv.graph.w < prv.padding.right) {
+        prv.graph.w-= prv.padding.right - (width - prv.graph.x - prv.graph.w)
+      }/*
+      if (width - prv.graph.w < prv.padding.right) {
+        prv.graph.w -= prv.padding.right - width + prv.graph.w
+      }*/
+      if (height - prv.graph.y - prv.graph.h < prv.padding.bottom) {
+        prv.graph.h -= prv.padding.bottom - (height - prv.graph.y - prv.graph.h)
+      }
     };
 
-    var updateGroup = function (grid, data) {
+    var updateGroup = function (grid, data) 
+    {
       grid.head = []
       grid.data = []
       if (grid.idx) {
@@ -466,13 +603,91 @@
         updateGroup (grid, data)
       })
 
+      that.refreshlayout ();
+
       /* Update - Y */
       updateGrid (prv.x, 'x', prv.graph.w);
       this.forEachGroup (function (grid, grp) {
         updateGrid (grid, grp, prv.graph.h)
       })
 
-      console.log ('DATA', prv.x.data, prv.x.head, prv.y1.data, prv.y1.head, prv.x.vwMin, prv.x.vwMax)
+      // console.log ('DATA', prv.x.data, prv.x.head, prv.y1.data, prv.y1.head, prv.x.vwMin, prv.x.vwMax)
+    }
+
+    var drawTitle = function  (ctx, prv) 
+    {
+      if (prv.titleInfo != null) {
+        ctx.font= parseInt(prv.grid.fontSize * 1.8) + 'px ' + prv.grid.fontFamily;
+        ctx.fillText (prv.title, prv.titleInfo.x, prv.titleInfo.y);
+      }
+    }
+
+    var drawLegend = function (ctx, prv) 
+    {
+      if (prv.legend == null) 
+        return
+
+      x = prv.legend.x
+      y = prv.legend.y + prv.grid.fontSize
+
+      /* TODO Style */ 
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = prv.grid.color;
+      ctx.strokeStyle = prv.grid.color;
+      ctx.font= parseInt(prv.grid.fontSize) + 'px ' + prv.grid.fontFamily;
+      ctx.fillText ('Legend:', x, y);
+
+      that.forEachGroup (function (grid) {
+
+        ctx.font= parseInt(grid.fontSize) + 'px ' + grid.fontFamily;
+
+        for (var i=0; i < grid.head.length; ++i) {
+
+          if (prv.legend.o) {
+            x += 110; 
+            if (x > prv.legend.x + prv.legend.w) {
+              y += 25
+              x = prv.legend.x
+            }
+          } else {
+            y+=25;
+            if (y > prv.legend.y + prv.legend.h) {
+              x += 110; 
+              y = prv.legend.y + prv.grid.fontSize + 25
+            }
+          }
+
+          ctx.fillStyle = grid.colors[i % grid.colors.length];
+          ctx.strokeStyle = grid.colors[i % grid.colors.length];
+          if (grid.selectedSerie == i)
+            ctx.fillRect (x, y - prv.grid.fontSize * 0.8, 
+              prv.grid.fontSize, 
+              prv.grid.fontSize);
+          else
+            ctx.fillRect (
+              x + prv.grid.fontSize * 0.2, 
+              y - prv.grid.fontSize * 0.7, 
+              prv.grid.fontSize * 0.6, 
+              prv.grid.fontSize * 0.6);
+
+          if (grid.head[i].name.length <= 10) {
+            ctx.fillText (grid.head[i].name, x + 20, y);
+            w = ctx.measureText(grid.head[i].name).width
+          }
+          else {
+            ctx.fillText (grid.head[i].name.substring(0, 8) + '...', x + 20, y);
+            w = ctx.measureText(grid.head[i].name.substring(0, 8) + '...').width
+          }
+
+          if (grid.selectedSerie == i) {
+            ctx.beginPath()
+            ctx.moveTo (x + 20, y + 2)
+            ctx.lineTo (x + 20 + w, y + 2)
+            ctx.stroke();
+          }
+
+        }
+      });
     }
 
     this.paint = function () 
@@ -480,12 +695,14 @@
       drawAxis (prv.ctx, prv.graph, prv.x);
       drawAxis (prv.ctx, prv.graph, prv.y1);
 
+      drawLegend (prv.ctx, prv);
+      drawTitle (prv.ctx, prv);
+
       prv.ctx.beginPath ()
       prv.ctx.rect (prv.graph.x, prv.graph.y, prv.graph.w, prv.graph.h)
       prv.ctx.clip ()
 
       this.forEachGroup (function (grid) {
-        // jaks.Plotter[prv.y1.plot].draw (prv.ctx, prv.graph, prv.y1, prv.x, prv.data, 'y1');
         jaks.Plotter[grid.plot].draw (prv.ctx, prv.graph, grid, prv.x);
         if (grid.mark != null) {
           drawMarkee (prv.ctx, prv.graph, grid, prv.x);
