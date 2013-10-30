@@ -69,6 +69,11 @@
         y:0,
         w:0,
         h:0
+      },
+      select:{
+        grp: 0,
+        ser: 0,
+        abs: 0
       }
     }, options); 
 
@@ -440,7 +445,8 @@
             x:prv.graph.x,
             w:prv.graph.w,
             y:prv.graph.y,
-            h:40 /* Compute */
+            h:40 /* Compute */,
+            s:series
           }
           prv.graph.y += prv.legend.h
           prv.graph.h -= prv.legend.h
@@ -452,7 +458,8 @@
             x:prv.graph.x,
             w:prv.graph.w,
             y:prv.graph.h-40,
-            h:40 /* Compute */
+            h:40 /* Compute */,
+            s:series
           }
           prv.graph.h -= prv.legend.h
           prv.legend.o = true;
@@ -463,7 +470,8 @@
             x:prv.graph.x,
             w:100,
             y:10,
-            h:height-20
+            h:height-20,
+            s:series
           }
           prv.graph.x += prv.legend.w + 20
           prv.graph.w -= prv.legend.w + 20
@@ -472,12 +480,14 @@
 
         case 'east':
           lg = parseInt ((height - 20) / 25)
-          lg = Math.ceil(series/lg);
+          lgc = Math.ceil(series/lg);
           prv.legend = {
-            x:prv.graph.x + prv.graph.w - 110 * lg,
-            w:110 * lg,
+            x:prv.graph.x + prv.graph.w - 110 * lgc,
+            w:110 * lgc,
             y:10,
-            h:height-20
+            h:height-20,
+            s:series,
+            sc:lg
           }
           prv.graph.w -= prv.legend.w + 10
           prv.legend.o = false;
@@ -660,9 +670,11 @@
           ctx.fillStyle = grid.colors[i % grid.colors.length];
           ctx.strokeStyle = grid.colors[i % grid.colors.length];
           if (grid.selectedSerie == i)
-            ctx.fillRect (x, y - prv.grid.fontSize * 0.8, 
-              prv.grid.fontSize, 
-              prv.grid.fontSize);
+            ctx.fillRect (
+              x + prv.grid.fontSize * 0.1,
+              y - prv.grid.fontSize * 0.8, 
+              prv.grid.fontSize * 0.8, 
+              prv.grid.fontSize * 0.8);
           else
             ctx.fillRect (
               x + prv.grid.fontSize * 0.2, 
@@ -671,27 +683,144 @@
               prv.grid.fontSize * 0.6);
 
           if (grid.head[i].name.length <= 10) {
-            ctx.fillText (grid.head[i].name, x + 20, y);
             w = ctx.measureText(grid.head[i].name).width
+            ctx.fillText (grid.head[i].name, x + 20, y);
           }
           else {
-            ctx.fillText (grid.head[i].name.substring(0, 8) + '...', x + 20, y);
             w = ctx.measureText(grid.head[i].name.substring(0, 8) + '...').width
+            ctx.fillText (grid.head[i].name.substring(0, 8) + '...', x + 20, y);
           }
 
           if (grid.selectedSerie == i) {
+            ctx.globalAlpha = 1.0;
+            ctx.lineWidth = 2.0;
             ctx.beginPath()
             ctx.moveTo (x + 20, y + 2)
             ctx.lineTo (x + 20 + w, y + 2)
             ctx.stroke();
           }
-
         }
       });
     }
 
+    var selectGrid = function (mouse) {
+
+      x = mouse.x - prv.graph.x
+      y = mouse.y - prv.graph.y
+
+      vx = x / prv.x.scale + prv.x.vwMin;
+      vy = (prv.graph.h - y) / prv.y1.scale + prv.y1.vwMin
+
+      var idx = -1, dist = 99999999999;
+      for (var i = 0; i < prv.x.data.length; i++) {
+        d = Math.abs(vx - prv.x.data[i][0]);
+        if (d < dist) {
+          idx = i;
+          dist = d
+        }
+
+      }
+
+      if (false) {
+        var jdx = -1, dist = 99999999999;
+        for (var j=0; j< prv.y1.data[idx].length; ++j) {
+          d = Math.abs(vy - prv.y1.data[idx][j]);
+          if (d < dist) {
+            jdx = j;
+            dist = d
+          }
+        }
+      } else {
+        var jdx = -1, dist = 99999999999;
+        var sum = 0; 
+        for (var j=0; j< prv.y1.data[idx].length; ++j) {
+          sum += prv.y1.data[idx][j]
+          if (jdx < 0 && sum > vy) {
+            jdx = j;
+          }
+        }
+      }
+
+      return { grp: 1, ser:jdx, abs:idx }
+    }
+
+    var selectLegend = function (mouse) {
+
+      sgrid = null;
+      x = parseInt ((mouse.x - prv.legend.x) / 110)
+      y = parseInt ((mouse.y - prv.legend.y) / 25) - 1;
+
+      if (x < 0 || y < 0)
+        return { };
+
+      var v = (prv.legend.o) 
+        ? y * prv.legend.sc + x 
+        : x * prv.legend.sc + y;
+      var grp = 1, ser = 0;
+      that.forEachGroup (function (grid) {
+        if (v < 0)
+          return;
+        if (v > grid.head.length-1) {
+          v -= grid.head.length;
+          grp++;
+        } else {
+          sgrid = grid;
+          ser = v;
+          v = -1;
+        }
+      })
+
+      if (sgrid != null)
+        return { grp:grp, ser:ser }
+      return { };
+    }
+
+    this.mouseMotion = function (mouse)
+    {
+      var origin = prv.select, 
+        actual = {
+          grp: 0,
+          ser: 0,
+          abs: 0,
+        };
+
+      var o = mouse.x > prv.graph.x && mouse.x < prv.graph.x + prv.graph.w &&
+        mouse.y > prv.graph.y && mouse.y < prv.graph.y + prv.graph.h;
+
+      if (prv.legend) {
+        var l = mouse.x > prv.legend.x && mouse.x < prv.legend.x + prv.legend.w &&
+          mouse.y > prv.legend.y && mouse.y < prv.legend.y + prv.legend.h;
+      }
+
+      if (o) {  
+        actual = jaks.extends(actual, selectGrid (mouse))
+
+      } else if (l) {
+        actual = jaks.extends(actual, selectLegend (mouse))
+
+      } else {
+      }
+
+      if (origin.grp != actual.grp || origin.ser != actual.ser || origin.abs != actual.abs) 
+      {
+        prv.select = actual;
+        if (origin.grp != 0)
+          prv['y' + origin.grp].selectedSerie = undefined
+        if (actual.grp != 0)
+          prv['y' + actual.grp].selectedSerie = actual.ser
+
+        this.paint ()
+      }
+    }
+
     this.paint = function () 
     {
+      prv.ctx.clearRect (0, 0, prv.$cvs.width, prv.$cvs.height)
+      prv.ctx.save ()
+      prv.ctx.beginPath ()
+      prv.ctx.rect (0, 0, prv.width, prv.height)
+      prv.ctx.clip ()
+
       drawAxis (prv.ctx, prv.graph, prv.x);
       drawAxis (prv.ctx, prv.graph, prv.y1);
 
@@ -710,7 +839,20 @@
       });
 
       this.trigger ('paint');
+      prv.ctx.restore ()
     }
+
+    var getMousePosition = function(evt) {
+      var canvas = prv.ctx.canvas
+      var rect = canvas.getBoundingClientRect();
+      var x = evt.clientX - rect.left;
+      var y = evt.clientY - rect.top;
+      return {
+        x: x,
+        y: y
+      };
+    };
+
 
     var that = this;
     {
@@ -725,9 +867,17 @@
         that.resize (prv.width, prv.height);
         that.update (data);
         that.paint ();
+
+        window.addEventListener('mousemove', function(e) {
+          var mouse = getMousePosition(e)
+          that.mouseMotion (mouse);
+        }, false);
+
       }, options.cvs);
+
+
+
     }
   };
 
 }).apply (jaks);
-

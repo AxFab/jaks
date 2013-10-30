@@ -53,9 +53,17 @@
         pmy = rect.h + rect.y - (vm - grid.vwMin) * grid.scale;
         ctx.beginPath();
         ctx.rect (px + gaps - gapf, pmy, gapn, pny - pmy);
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = (grid.selectedSerie == null 
+          ? 0.6 
+          : (grid.selectedSerie == idx 
+            ? 0.6
+            : 0.2));
         ctx.fill();
-        ctx.globalAlpha=1.0;
+        ctx.globalAlpha = (grid.selectedSerie == null 
+          ? 1.0 
+          : (grid.selectedSerie == idx 
+            ? 1.0
+            : 0.4));
         ctx.stroke();
       }
     },
