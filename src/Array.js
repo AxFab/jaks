@@ -17,9 +17,11 @@
   You should have received a copy of the GNU General Public License
   along with Jaks.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 Array.prototype.contains = function (item) {
   for (var i=0; i<this.length; ++i)
     if (this[i] == item)
       return true;
   return false;
 };
+
