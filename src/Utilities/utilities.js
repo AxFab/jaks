@@ -1,6 +1,16 @@
 
 var Utilities = {}
 
+if (exports) 
+  exports.Utilities = Utilities;
+
+// ---------------------------------------------------------------------------
+Utilities.extends = function (model, obj) 
+{
+  for (var k in obj)
+    model[k] = obj[k];
+  return model;
+}
 
 // ---------------------------------------------------------------------------
 /** Formats date according to specification described in Java SE 
